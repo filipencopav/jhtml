@@ -1,9 +1,6 @@
-#+TITLE: jhtml
+#+TITLE: jhtml: simple html generator
 
-jhtml
-
-* Simple html generator
-** Usage example
+* Usage example
   #+begin_src lisp
     (asdf:load-system :jhtml)
 
