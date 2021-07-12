@@ -1,4 +1,15 @@
-jhtml: simple html generator
+#+TITLE: jhtml: simple html generator
+
+=jhtml:jhtml= is a function that takes in a list and spits out a string of
+tightly packed html.
+#+begin_src lisp
+  (html
+   (head (title "hey")
+         (link :rel "stylesheet" :type "text/css" :href "foo/bar.css"))
+   (body
+    (h1 "hello")
+    (p "hi")))
+#+end_src
 
 * Usage example
   #+begin_src lisp
