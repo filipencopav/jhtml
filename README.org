@@ -1,5 +1,4 @@
-=jhtml=: simple html generator
-=-----=
+jhtml: simple html generator
 
 * Usage example
   #+begin_src lisp
