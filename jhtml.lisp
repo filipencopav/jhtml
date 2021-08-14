@@ -1,68 +1,92 @@
 ;;;; jhtml.lisp
-
 (in-package #:jhtml)
 
-(defvar *void-elements*
-  '(area
-    base
-    br
-    col
-    embed
-    hr
-    img
-    link
-    meta
-    param
-    source
-    track
-    wbr)
-  "*VOID-ELEMENTS* is a list of symbols.
-Contains the self-terminating elements. If the HTML tag is one of these,
-an closing tag, such as </p>, won't be added.")
+;;; Variables
+(defparameter *special-rules* ())
 
-(defvar *special-rules*
-  '((doctype . "<!DOCTYPE html>"))
-  "*SPECIAL-RULES* is a list of dotted pairs, CAR being a symbol and CDR being a string.
-A dotted pair shall contain a symbol and a string to use in this case.")
 
+;;; Special rules
 (defun symbol= (x y)
-  (when (and (symbolp x) (symbolp y))
-    (string= (symbol-name x)
-             (symbol-name y))))
+  (declare (symbol x y))
+  (apply #'string= (mapcar #'symbol-name (list x y))))
 
-(defun transform-tree-element (elem)
-  (let ((special-rule (find elem *special-rules* :test #'symbol= :key #'car)))
-    (if special-rule
-        (cdr special-rule)
-        (jhtml-helper elem))))
+(defun special-rule-p (symbol)
+  (find symbol *special-rules* :test #'symbol=))
 
-(defun jhtml (&rest s-expressions)
-  (format nil "~{~A~}" (mapcar #'transform-tree-element s-expressions)))
+(defmacro define-special-rule (name arglist &body body)
+  ""
+  `(progn
+     (unless (special-rule-p ',name)
+       (push ',name *special-rules*))
 
-(defun strip-attributes (list)
-  (do ((attrs ()) (clean-sexp ()) (cons list))
-      ((null cons) (values (nreverse attrs) (nreverse clean-sexp)))
-    (let ((car (car cons)) (cadr (cadr cons)))
-      (if (keywordp car)
-          (progn
-            (push (list car cadr) attrs)
-            (setf cons (cdr cons)))
-          (push car clean-sexp))
-      (setf cons (cdr cons)))))
+     (defun ,name ,arglist
+       (the string (progn ,@body)))))
 
+
+;;; Void elements (self-enclosing tags)
+(defun void-element-definition (name)
+  `(define-special-rule ,name (&rest args)
+     (format nil "<~A~{ ~A=\"~A\"~} />" (string-downcase ',name) (strip-attributes args))))
+
+(defmacro define-void-elements (&rest elements)
+  `(progn
+     ,@ (mapcar #'void-element-definition elements)))
+
+
+;;; List to html
 (defun string-value (element)
-  (the (or string cons) element)
   (etypecase element
     (string element)
-    (cons (jhtml-helper element))))
+    (cons (transform-tree-element element))))
 
 (defun jhtml-helper (sexp)
-  (the cons sexp)
-  (the symbol (car sexp))
+  (declare (type cons sexp))
   (multiple-value-bind (attrs sexp) (strip-attributes sexp)
-    (format nil "<~A~{ ~{~A=\"~A\"~}~}~:[>~{~A~}</~A>~; />~]"
-            (string-downcase (string (car sexp)))
-            attrs
-            (find (car sexp) *void-elements* :test #'symbol=)
-            (mapcar #'string-value (cdr sexp))
-            (string-downcase (string (car sexp))))))
+    (let ((element (string-downcase (car sexp)))
+          (contents (mapcar #'string-value (cdr sexp))))
+      (format nil "<~A~{ ~A=\"~A\"~}>~{~A~}</~3:*~A>" element attrs contents))))
+
+(defun strip-attributes (list)
+  (do (attrs clean-sexp
+       (list list (cdr list)))
+      ((null list)
+       (values (nreverse attrs) (nreverse clean-sexp)))
+    (let ((first (first list)) (second (second list)))
+      (if (keywordp first)
+          (setf attrs (list* second first attrs)
+                list (cdr list))
+          (push first clean-sexp)))))
+
+(defun transform-tree-element (list)
+  (let ((special-rule (special-rule-p (car list))))
+    (if special-rule
+        (apply special-rule (cdr list))
+        (jhtml-helper list))))
+
+(defun jhtml (&rest lists)
+  "Converts `lists' to an HTML string.
+The first element of every list has to be a symbol, of any package.
+The rest can be any combination of keyword-string pairs, strings or
+new lists.
+
+If the first element isn't part of a special rule, it gets treated
+like some ordinary html tag name. If it is, the function associated
+with the special rule is called and the string it returns is inserted.
+See `define-special-rule'.
+
+Example usage:
+(jhtml:jhtml
+ '(doctype)
+ `(html
+   (head
+    (link :rel \"stylesheet\" :type \"text/css\" :href \"/path/to/styles.css\")
+    (title \"My Webpage\"))
+   (body
+    (h1 \"Heading\")
+    (hr)
+    (p :class \"article body\"
+       ,(server:get-latest-article)))))
+
+Other usage ideas would be to create template functions that return lists,
+ which then one would pass to jhtml."
+  (format nil "~{~A~}" (mapcar #'transform-tree-element lists)))

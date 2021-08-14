@@ -3,7 +3,7 @@
 (defpackage #:jhtml
   (:use #:cl)
   (:export #:jhtml
-           #:*void-elements*
-           #:*special-symbols*))
+           #:define-special-rule
+           #:define-void-elements))
 
 (in-package #:jhtml)
