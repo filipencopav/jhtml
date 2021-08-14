@@ -4,8 +4,9 @@
 tightly packed html.
 #+begin_src lisp
   (html
-   (head (title "hey")
-         (link :rel "stylesheet" :type "text/css" :href "foo/bar.css"))
+   (head
+    (title "hey")
+    (link :rel "stylesheet" :type "text/css" :href "foo/bar.css"))
    (body
     (h1 "hello")
     (p "hi")))
@@ -15,14 +16,17 @@ tightly packed html.
   #+begin_src lisp
     (asdf:load-system :jhtml)
 
-    (jhtml:jhtml 'doctype
-                 `(html
-                   (head (title "Hello")
-                         (link :rel "stylesheet" :type "text/css" :href "link/to/css"))
-                   (body (h1 "Hi!!")
-                         (p "whadup?"))))
+    (jhtml:jhtml
+     '(doctype)
+     '(html
+       (head
+        (title "Hello")
+        (link :rel "stylesheet" :type "text/css" :href "link/to/css"))
+       (body
+        (h1 "Hi!!")
+        (p "whadup?"))))
   #+end_src
-  returns
+returns
   #+begin_src html
     <!DOCTYPE html><html><head><title>Hello</title><link REL="stylesheet" TYPE="text/css" HREF="link/to/css" /></head><body><h1>Hi!!</h1><p>whadup?</p></body></html>
   #+end_src
@@ -41,32 +45,6 @@ tightly packed html.
       </body>
     </html>
   #+end_src
-
-* So what now?
-  My guess is you're gonna use it to generate web pages. Start defining
-  functions with this function underlying.
-  #+begin_src lisp
-    (defparameter *posts* ())
-
-    (defun make-post (textcontent &key (username "Anonymous") (title ""))
-      `(div :class "post"
-            (span :class "title" ,title)
-            (span :class "name" ,username)
-            (blockquote :class "postMessage" ,textcontent)))
-
-    (push (make-post "Hey fellow anons!") *posts*)
-    (push (make-post "hello!" :username "Josh" :title "My salutation to everyone!.") *posts*)
-
-    ;; pseudo web server response tool
-    (define-response "/thread"
-      (jhtml:jhtml
-       `(html
-         (head (title "some thread"))
-         (body
-          ,@ *posts*))))
-  #+end_src
-  Then you just add some posting functionality and handling of post requests and
-  you've got yourself a working textboard. Pretty simple and modular.
 
 * Why the `J'?
   Because it sounds nice.
