@@ -28,11 +28,6 @@ tightly packed html.
   #+end_src
 returns
   #+begin_src html
-    <!DOCTYPE html><html><head><title>Hello</title><link REL="stylesheet" TYPE="text/css" HREF="link/to/css" /></head><body><h1>Hi!!</h1><p>whadup?</p></body></html>
-  #+end_src
-  It returns the html unformatted, it's intended for use in servers or
-  something. Formatted, looks like:
-  #+begin_src html
     <!DOCTYPE html>
     <html>
       <head>
