@@ -7,6 +7,7 @@
 
 ;;; Special rules
 (defun symbol= (x y)
+  "Checks whether two symbols are equal, regardless of package."
   (declare (symbol x y))
   (apply #'string= (mapcar #'symbol-name (list x y))))
 
@@ -14,7 +15,16 @@
   (find symbol *special-rules* :test #'symbol=))
 
 (defmacro define-special-rule (name arglist &body body)
-  ""
+  "Define a rule for a specific type of lists. The rest of the list are used
+ as arguments to the function. The defined rule should return a string.
+
+Example:
+(define-special-rule doctype (&optional (type \"html\"))
+  (format nil \"<!DOCTYPE ~A>\" type))
+
+(jhtml '(doctype)) ;=> \"<!DOCTYPE html>\"
+(jhtml '(doctype \"something else\")) ;=> \"<!DOCTYPE something else>\"
+"
   `(progn
      (unless (special-rule-p ',name)
        (push ',name *special-rules*))
@@ -29,6 +39,13 @@
      (format nil "<~A~{ ~A=\"~A\"~} />" (string-downcase ',name) (strip-attributes args))))
 
 (defmacro define-void-elements (&rest elements)
+  "Define self-closing tags.
+
+Example:
+(define-void-elements img link meta)
+
+Now <img> <link> and <meta> elements won't have the respective </img>, </link>
+and </meta> tags."
   `(progn
      ,@ (mapcar #'void-element-definition elements)))
 
