@@ -3,6 +3,7 @@
 
 ;;; Variables
 (defparameter *special-rules* ())
+(defparameter *output-stream* () "The stream to output to. By default returns string.")
 
 
 ;;; Special rules
@@ -36,7 +37,7 @@ Example:
 ;;; Void elements (self-enclosing tags)
 (defun void-element-definition (name)
   `(define-special-rule ,name (&rest args)
-     (format nil "<~A~{ ~A=\"~A\"~} />" (string-downcase ',name) (strip-attributes args))))
+     (format nil "<~A~{ ~A=\"~A\"~}>" (string-downcase ',name) (strip-attributes args))))
 
 (defmacro define-void-elements (&rest elements)
   "Define self-closing tags.
@@ -50,10 +51,27 @@ and </meta> tags."
      ,@ (mapcar #'void-element-definition elements)))
 
 
+;;; Escapes
+(defvar *html-escapes*
+  '(#\> "&gt;"
+    #\< "&lt;"
+    #\& "&amp;"
+    #\" "&quot;"))
+
+(defun escape (str)
+  (declare (string str))
+  (with-output-to-string (stream)
+    (loop for ch across str
+          for escaped = (getf *html-escapes* ch)
+          do (if escaped
+                 (write-string escaped stream)
+                 (write-char ch stream)))))
+
 ;;; List to html
 (defun string-value (element)
   (etypecase element
-    (string element)
+    (null "")
+    (string (escape element))
     (cons (transform-tree-element element))))
 
 (defun jhtml-helper (sexp)
@@ -78,7 +96,7 @@ and </meta> tags."
   (let ((special-rule (special-rule-p (car list))))
     (if special-rule
         (apply special-rule (cdr list))
-        (jhtml-helper list))))
+        (jhtml-helper (if list list (cdr list))))))
 
 (defun jhtml (&rest lists)
   "Converts `lists' to an HTML string.
@@ -106,4 +124,11 @@ Example usage:
 
 Other usage ideas would be to create template functions that return lists,
  which then one would pass to jhtml."
-  (format nil "~{~A~}" (mapcar #'transform-tree-element lists)))
+  (format *output-stream* "~{~A~}" (mapcar #'transform-tree-element lists)))
+
+(defun to-string (&rest lists)
+  "Output html to string. Useful to avoid unnecessary binding of
+`*output-stream*' to nil in contexts where it's bound to a different
+value, but the user needs a string, for any reason."
+  (let ((*output-stream* nil))
+    (apply #'jhtml lists)))
