@@ -5,6 +5,9 @@
   (:export #:jhtml
            #:define-special-rule
            #:define-void-elements
-           #:*output-stream*))
+           #:*output-stream*
+           ;; pre-defined special rules
+           #:doctype
+           #:insert-html))
 
 (in-package #:jhtml)

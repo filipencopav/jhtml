@@ -17,11 +17,13 @@ tightly packed html.
     (asdf:load-system :jhtml)
 
     (jhtml:jhtml
-     '(doctype)
+     '(jhtml:doctype) ; this is a special rule, these belong to packages
      '(html
        (head
         (title "Hello")
-        (link :rel "stylesheet" :type "text/css" :href "link/to/css"))
+        ;; self-closing tags are keywords
+        ;; this is because they're all special rules in the :KEYWORD package
+        (:link :rel "stylesheet" :type "text/css" :href "link/to/css"))
        (body
         (h1 "Hi!!")
         (p "whadup?"))))

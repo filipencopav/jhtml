@@ -7,13 +7,8 @@
 
 
 ;;; Special rules
-(defun symbol= (x y)
-  "Checks whether two symbols are equal, regardless of package."
-  (declare (symbol x y))
-  (apply #'string= (mapcar #'symbol-name (list x y))))
-
 (defun special-rule-p (symbol)
-  (find symbol *special-rules* :test #'symbol=))
+  (find symbol *special-rules*))
 
 (defmacro define-special-rule (name arglist &body body)
   "Define a rule for a specific type of lists. The rest of the list are used
