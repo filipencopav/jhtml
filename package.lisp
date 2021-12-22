@@ -3,6 +3,7 @@
 (defpackage #:jhtml
   (:use #:cl)
   (:export #:jhtml
+           #:to-string
            #:define-special-rule
            #:define-void-elements
            #:*output-stream*
