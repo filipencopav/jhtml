@@ -26,7 +26,7 @@ Example:
        (push ',name *special-rules*))
 
      (defun ,name ,arglist
-       (the string (progn ,@body)))))
+       ,@body)))
 
 
 ;;; Void elements (self-enclosing tags)
@@ -66,12 +66,15 @@ and </meta> tags."
 (defun string-value (element)
   (etypecase element
     (null "")
+    (number (write-to-string element))
     (string (escape element))
     (cons (transform-tree-element element))))
 
 (defun jhtml-helper (sexp)
   (declare (type cons sexp))
   (multiple-value-bind (attrs sexp) (strip-attributes sexp)
+    (when (consp (car sexp))
+      (return-from jhtml-helper (format nil "~{~A~}" (mapcar #'string-value sexp))))
     (let ((element (string-downcase (car sexp)))
           (contents (mapcar #'string-value (cdr sexp))))
       (format nil "<~A~{ ~A=\"~A\"~}>~{~A~}</~3:*~A>" element attrs contents))))
@@ -88,10 +91,11 @@ and </meta> tags."
           (push first clean-sexp)))))
 
 (defun transform-tree-element (list)
+  (when (null (car list)) (return-from transform-tree-element ""))
   (let ((special-rule (special-rule-p (car list))))
     (if special-rule
         (apply special-rule (cdr list))
-        (jhtml-helper (if list list (cdr list))))))
+        (jhtml-helper (or list (cdr list))))))
 
 (defun jhtml (&rest lists)
   "Converts `lists' to an HTML string.
