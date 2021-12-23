@@ -2,33 +2,52 @@
 
 =jhtml:jhtml= is a function that takes in a list and spits out a string of
 tightly packed html.
-#+begin_src lisp
-  (html
-   (head
-    (title "hey")
-    (link :rel "stylesheet" :type "text/css" :href "foo/bar.css"))
-   (body
-    (h1 "hello")
-    (p "hi")))
-#+end_src
 
-* Usage example
+* Usage examples
+** First steps
+   Take a sexp - it returns html! Intuitive, too.
   #+begin_src lisp
     (asdf:load-system :jhtml)
 
-    (jhtml:jhtml
-     '(jhtml:doctype) ; this is a special rule, these belong to packages
-     '(html
-       (head
-        (title "Hello")
-        ;; self-closing tags are keywords
-        ;; this is because they're all special rules in the :KEYWORD package
-        (:link :rel "stylesheet" :type "text/css" :href "link/to/css"))
-       (body
-        (h1 "Hi!!")
-        (p "whadup?"))))
+    (jhtml:jhtml '(p "hello!")) ; => "<p>hello!</p>"
+    (jhtml:jhtml '((h1 "hi") (p "hey"))) ; => "<h1>hi</h1><p>hey</p>"
   #+end_src
-returns
+
+** A little package construct
+   #+begin_src lisp
+     (jhtml:jhtml
+      `(div :class "package"
+        (h2 :class "package-name" "jhtml")
+        (p :class "package-description" "sexp to html converter!")))
+   #+end_src
+
+** Special rules mini intro
+   Special rules are "special" tags that behave differently than one would
+   expect any other tag to behave, for example the DOCTYPE. It doesn't have a
+   closing tag, nor does it have attributes, just one parameter, the document
+   type.
+   #+begin_src lisp
+     (jhtml:jhtml '(doctype)) ; => "<!DOCTYPE html>"
+     (jhtml:jhtml '(doctype "another")) ; => "<!DOCTYPE another>"
+   #+end_src
+
+** Combine it!
+  #+begin_src lisp
+    (jhtml:jhtml
+     '((jhtml:doctype) ; special rule! (they belong to packages)
+       (html
+        (head
+         (title "Hello")
+         ;; self-closing tags are keywords
+         ;; this is because they're all special rules in the :KEYWORD package
+         (:link :rel "stylesheet" :type "text/css" :href "link/to/css"))
+        (body
+         (h1 "Hi!!")
+         (nil You can use a nil tag for comments!)
+         (p "whadup?")))))
+  #+end_src
+
+  The previous code will return: (formatted for clearness)
   #+begin_src html
     <!DOCTYPE html>
     <html>
@@ -42,6 +61,43 @@ returns
       </body>
     </html>
   #+end_src
+
+* Built-in special rules
+** jhtml:doctype
+   inserts a doctype directive
+   #+begin_src lisp
+     (jhtml:jhtml '(jhtml:doctype)) ; => "<!DOCTYPE html>"
+     (jhtml:jhtml '(jhtml:doctype "another")) ; => "<!DOCTYPE another>"
+   #+end_src
+
+** jhtml:insert-html
+   because jhtml filters its strings to escape them, you need INSERT-HTML to
+   insert raw html
+   #+begin_src lisp
+     ;; without INSERT-HTML
+     (jhtml:jhtml '(head "<title>helo</title>")) ; => "<head>&lt;title&gt;helo&lt;/title&gt;</head>"
+
+     ;; with INSERT-HTML
+     (jhtml:jhtml
+      '(jhtml:insert-html
+        "<head><title>helo</title></head>")) ; => "<head><title>helo</title></head>"
+   #+end_src
+
+   mostly, it's intended to be used for using jhtml within another jhtml call
+   #+begin_src lisp
+     (defun maths (a b)
+       (declare (ignorable a))
+       (jhtml:jhtml
+        `(html
+          (head (title "maths"))
+          (body
+           (jhtml:insert-html
+            ,(when (> (+ a b) 10)
+               (jhtml:jhtml '((h1 "BIG!") (:hr)))))
+           (p ,a " + "
+              ,b " = "
+              ,(+ a b))))))
+   #+end_src
 
 * Why the `J'?
   Because it sounds nice.
